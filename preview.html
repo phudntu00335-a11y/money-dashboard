@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Theo Dõi Chi Tiêu</title>
+
+<!-- Thư viện Chart.js để vẽ biểu đồ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f8fb;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background: #4CAF50;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-size: 22px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+input, select, button {
+    padding: 8px;
+    margin: 5px 0;
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #45a049;
+}
+
+.summary {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+.transaction-list {
+    margin-top: 20px;
+}
+
+.transaction-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+
+.delete-btn {
+    background: red;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<header>Dashboard Theo Dõi Chi Tiêu</header>
+
+<div class="container">
+
+    <!-- Khu nhập dữ liệu -->
+    <h3>Thêm giao dịch</h3>
+    <input type="text" id="desc" placeholder="Mô tả giao dịch">
+    <input type="number" id="amount" placeholder="Số tiền">
+    <select id="type">
+        <option value="income">Thu nhập</option>
+        <option value="expense">Chi tiêu</option>
+    </select>
+    <button onclick="addTransaction()">Thêm</button>
+
+    <!-- Hiển thị tổng -->
+    <div class="summary">
+        <div>Tổng thu: <span id="totalIncome">0</span> đ</div>
+        <div>Tổng chi: <span id="totalExpense">0</span> đ</div>
+        <div>Số dư: <span id="balance">0</span> đ</div>
+    </div>
+
+    <!-- Danh sách giao dịch -->
+    <div class="transaction-list" id="transactionList"></div>
+
+    <!-- Biểu đồ -->
+    <canvas id="myChart" style="margin-top:20px;"></canvas>
+
+</div>
+
+<script>
+let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+
+function addTransaction() {
+    const desc = document.getElementById("desc").value;
+    const amount = parseFloat(document.getElementById("amount").value);
+    const type = document.getElementById("type").value;
+
+    if (!desc || !amount) {
+        alert("Vui lòng nhập đầy đủ thông tin!");
+        return;
+    }
+
+    transactions.push({ desc, amount, type });
+    localStorage.setItem("transactions", JSON.stringify(transactions));
+
+    document.getElementById("desc").value = "";
+    document.getElementById("amount").value = "";
+
+    updateUI();
+}
+
+function deleteTransaction(index) {
+    transactions.splice(index, 1);
+    localStorage.setItem("transactions", JSON.stringify(transactions));
+    updateUI();
+}
+
+function updateUI() {
+    let income = 0;
+    let expense = 0;
+    const list = document.getElementById("transactionList");
+    list.innerHTML = "";
+
+    transactions.forEach((t, index) => {
+        if (t.type === "income") income += t.amount;
+        else expense += t.amount;
+
+        list.innerHTML += `
+            <div class="transaction-item">
+                <span>${t.desc} (${t.type === "income" ? "+" : "-" }${t.amount} đ)</span>
+                <button class="delete-btn" onclick="deleteTransaction(${index})">Xoá</button>
+            </div>
+        `;
+    });
+
+    document.getElementById("totalIncome").innerText = income;
+    document.getElementById("totalExpense").innerText = expense;
+    document.getElementById("balance").innerText = income - expense;
+
+    updateChart(income, expense);
+}
+
+let chart;
+function updateChart(income, expense) {
+    const ctx = document.getElementById("myChart").getContext("2d");
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: "pie",
+        data: {
+            labels: ["Thu nhập", "Chi tiêu"],
+            datasets: [{
+                data: [income, expense],
+                backgroundColor: ["#4CAF50", "#FF6384"]
+            }]
+        }
+    });
+}
+
+updateUI();
+</script>
+
+</body>
+</html>
